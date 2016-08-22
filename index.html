@@ -3,26 +3,47 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Neighborhood Map</title>
-	<link rel="stylesheet" href="style.css">
+	<meta name="viewport" content="width=device-width, shrink-to-fit=no, initial-scale=1">
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link href="css/simple-sidebar.css" rel="stylesheet">
+	<link href="css/style.css" rel="stylesheet">
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.0/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <body>
-	<h1>Bars of Boystown -- Chicago, IL</h1>
-	<div id="map"></div>
-	<div id="filter">
-		Search: <input data-bind="value: placeSearch, valueUpdate: 'afterkeydown'" />
-		<ul id="placeList" data-bind="foreach: filteredPlaces">
-			<li data-bind="text: name, click: function() {toggleBounce(marker)}"></li>
-		</ul>
-	</div>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBM_kqQv8QyOFiPaFEXZN4c4GCFZmoDLfI&v=3&callback=ViewModel" async></script>
+	<button id="menu-toggle" class="btn icon-white btn-lg" style="background-color: #000">
+    	<span class="glyphicon glyphicon-menu-hamburger"style="background-color: #000"></span>
+	</button>
+	<h1 id="title">Bars of Boystown -- Chicago, IL</h1>
+	<div id="wrapper">
+	    <div id="sidebar-wrapper">
+	    Search: <input data-bind="value: placeSearch, valueUpdate: 'afterkeydown'" />
+            <ul id="placeList" data-bind="foreach: filteredPlaces">
+            	<li data-bind="text: name, click: function() {showInfo(contentString)}"></li>                
+            </ul>    
+	    </div> 
+    </div>
+    <div id="map"></div>
 
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
 
- <script language="JavaScript" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.0/jquery.min.js"></script>
 
- <script src="bower_components/oauth-signature/dist/oauth-signature.js"></script>
+	<script src="bower_components/oauth-signature/dist/oauth-signature.js"></script>
 
-<script src="lib/knockout/dist/knockout.js"></script>
-<script src="app.js"></script>
+	<script src="lib/knockout/dist/knockout.js"></script>
+	<script src="app.js"></script>
+	<script>
+	function googleError() {
+        if(!alert("The Google Maps API did not load. Please refresh the page and try again.")){
+			window.location.reload();
+		}    
+	}
+	</script>
+	<script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+    </script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBM_kqQv8QyOFiPaFEXZN4c4GCFZmoDLfI&v=3&callback=initMap" onerror="googleError()"></script>
 </body>
 </html>

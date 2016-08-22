@@ -1,4 +1,4 @@
-var places = [];
+var map, infoWindow;
 var generateNonce = function(length) {
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -32,6 +32,7 @@ var parameters = {
 var encodedSignature = oauthSignature.generate('GET',yelpBaseURL, parameters, YELP_CONSUMER_SECRET, YELP_TOKEN_SECRET);
 parameters.oauth_signature = encodedSignature;
 
+var places = new Array(15);
 var settings = {
     url: yelpBaseURL,
     data: parameters,
@@ -39,24 +40,22 @@ var settings = {
     dataType: 'jsonp',
     success: function(results) {
         console.log(results);
-        var businesses = results.businesses;
-        for (i=0; i < businesses.length;i++){
-            business = businesses[i];
-            places.push(business);
-        }
-        ko.applyBindings( new ViewModel() );
+        results['businesses'].forEach(function(place) {
+            places.push( new Place(place) );
+        });
+        ko.applyBindings(new ViewModel());
     },
-    fail: function() {
-        if(!alert("The Yelp API did not load. Please refresh the page and try again.")){
-        window.location.reload();
-    }
-    }
+    timeout: 3000
 };
 
-$.ajax(settings);
+$.ajax(settings).fail(function(err){
+    console.log(err);
+    if(!alert("Accessing the Yelp API failed. Please refresh the page and try again.")){
+        window.location.reload();
+    }
+});
 
-
-var Place = function(map, data) {
+var Place = function(data) {
     var self = this;
 
     this.name = data.name;
@@ -81,29 +80,46 @@ var Place = function(map, data) {
         animation: null,
         map: map
     });
-    this.marker.addListener('click', function() {
-                infowindow.open(map, self.marker);
-            });
+
+    Place.prototype.toggleBounce = function() {        
+        var marker = this.marker;
+        if (marker.animation === null){
+            marker.setAnimation(google.maps.Animation.BOUNCE);
+            setTimeout(function(){
+                marker.setAnimation(null);
+            }, 5000);
+        }
+        else {
+            marker.setAnimation(null);
+        }
+    };
 
     var stars;
     var numStars = data.rating;
     var ratingUrl = data.rating_img_url;
 
-    var contentString = '<div id="content">' +
+    this.contentString = '<div id="content">' +
         '<h1 id="heading">'+this.name+'</h1>'+
         '<div id="bodyContent">'+
         '<p>'+this.addr+'</p>'+
         '<p>'+this.city+'</p>'+
-        '<p><img src="'+ratingUrl+'">'+numStars+'/5 from '+
-        '<a href src="'+data.url+'"</a>'+data.review_count+'</a> reviews</p>' +
+        '<p> <img src="'+ratingUrl+'">'+numStars+'/5 from '+
+        '<p><a href="'+data.url+'" target="_blank">'+data.review_count+'</a> reviews</p>' +
         '<p><img src="images/yelp-logo-small.png" style="width:40px;"></p>' +
         '</div>'+
         '</div>';
 
-    var infowindow = new google.maps.InfoWindow({
-          content: contentString
-    });
+    Place.prototype.showInfo = function(info) {
+        // toggle the bounce
+        this.toggleBounce();
+        // open the info window 
+        infoWindow.setContent(this.contentString);
+        infoWindow.open(map, this.marker);
+    }
 
+    this.marker.addListener('click', function() {
+        self.showInfo(this.contentString);
+    });
 
     this.isVisible = ko.observable(false);
 
@@ -123,16 +139,32 @@ var Place = function(map, data) {
 
 var ViewModel = function() {
     var self = this;
-    if (typeof google == 'undefined'){
-        if(!alert("The Google Maps API did not load. Please refresh the page and try again.")){
-            window.location.reload();
-        }
-    }
 
     self.placeList = ko.observableArray([]);
 
+    places.forEach(function(place){
+        self.placeList.push(place);
+    });
+
+    console.log(placeList);
+
+    self.placeSearch = ko.observable('');
+
+    this.filteredPlaces = ko.computed(function() {
+        var filter = self.placeSearch().toLowerCase();
+        return ko.utils.arrayFilter(self.placeList(), function(item) {
+            var doesMatch = item.name.toLowerCase().indexOf(filter) !== -1;
+            item.isVisible(doesMatch);
+            return doesMatch;
+        });
+    });
+
+
+};
+
+function initMap() {
     var mapDiv = document.getElementById('map');
-    var map = new google.maps.Map(mapDiv, {
+    map = new google.maps.Map( mapDiv, {
         center: {lat: 41.94303, lng: -87.64657},
         zoom: 13,
         scrollwheel: false,
@@ -142,41 +174,6 @@ var ViewModel = function() {
         rotateControl: false,
         zoomControl: false
     });
+    infoWindow = new google.maps.InfoWindow();
+}
 
-    toggleBounce = function(marker){
-        if (marker.animation == null){
-            marker.setAnimation(google.maps.Animation.BOUNCE);
-            setTimeout(function(){
-                marker.setAnimation(null);
-
-            }, 5000);
-        }
-        else {
-            marker.setAnimation(null);
-        }
-    };
-
-    places.forEach(function(placeItem){
-        self.placeList.push( new Place(map, placeItem) );
-    });
-
-    self.placeSearch = ko.observable('');
-
-    this.filteredPlaces = ko.computed(function() {
-        var filter = self.placeSearch().toLowerCase();
-        if (!filter) {
-            return ko.utils.arrayFilter(self.placeList(), function(item) {
-                item.isVisible(true);
-                return true;
-            });
-        } else {
-            return ko.utils.arrayFilter(self.placeList(), function(item) {
-                var doesMatch = item.name.toLowerCase().indexOf(filter) !== -1;
-                item.isVisible(doesMatch);
-                return doesMatch;
-            });
-        }
-
-    });
-
-};
