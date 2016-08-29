@@ -14,7 +14,7 @@ var YELP_CONSUMER_SECRET = "PqeCZh5pA2GLbO8q-wXx2EIM8LA";
 var YELP_TOKEN_SECRET = "ULjel3EA4z_tYxfjHmjdudjp91A";
 
 
-var yelpBaseURL = "http://api.yelp.com/v2/search";
+var yelpBaseURL = "https://api.yelp.com/v2/search";
 
 var parameters = {
     callback: 'cb',
